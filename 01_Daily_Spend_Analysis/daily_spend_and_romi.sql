@@ -22,3 +22,24 @@ SELECT
 FROM combined_ads
 GROUP BY ad_date, media_source
 ORDER BY ad_date DESC, media_source;
+
+WITH daily_metrics AS (
+    SELECT ad_date, spend, value FROM public.facebook_ads_basic_daily
+    UNION ALL
+    SELECT ad_date, spend, value FROM public.google_ads_basic_daily
+),
+daily_totals AS (
+    SELECT 
+        ad_date,
+        SUM(CAST(spend AS NUMERIC)) AS total_spend,
+        SUM(CAST(value AS NUMERIC)) AS total_value
+    FROM daily_metrics
+    GROUP BY ad_date
+)
+SELECT 
+    ad_date,
+    ROUND((total_value / NULLIF(total_spend, 0)), 4) AS romi
+FROM daily_totals
+WHERE total_spend > 0
+ORDER BY romi DESC, ad_date DESC
+LIMIT 5;
